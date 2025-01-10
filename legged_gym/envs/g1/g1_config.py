@@ -20,7 +20,8 @@ class G1RoughCfg( LeggedRobotCfg ):
         }
     
     class env(LeggedRobotCfg.env):
-        num_observations = 47
+        dim_height_map = LeggedRobotCfg.terrain.height_map_dim if LeggedRobotCfg.terrain.mesh_type in ['heightfield', 'trimesh'] else 0
+        num_observations = 47 + dim_height_map # add 187 for rough terrain
         num_privileged_obs = 50
         num_actions = 12
 

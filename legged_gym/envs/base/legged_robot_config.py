@@ -12,7 +12,9 @@ class LeggedRobotCfg(BaseConfig):
         test = False
 
     class terrain:
-        mesh_type = 'plane' # "heightfield" # none, plane, heightfield or trimesh
+        # mesh_type = 'plane' # "heightfield" # none, plane, heightfield or trimesh
+        mesh_type = 'trimesh' # "heightfield" # none, plane, heightfield or trimesh
+        # mesh_type = 'heightfield' # "heightfield" # none, plane, heightfield or trimesh
         horizontal_scale = 0.1 # [m]
         vertical_scale = 0.005 # [m]
         border_size = 25 # [m]
@@ -22,6 +24,8 @@ class LeggedRobotCfg(BaseConfig):
         restitution = 0.
         # rough terrain only:
         measure_heights = True
+        # NOTE: 187 is the number of height measurements for the rough terrain in current case! It depends on the terrain size and resolution!!
+        height_map_dim = 187
         measured_points_x = [-0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8] # 1mx1.6m rectangle (without center line)
         measured_points_y = [-0.5, -0.4, -0.3, -0.2, -0.1, 0., 0.1, 0.2, 0.3, 0.4, 0.5]
         selected = False # select a unique terrain type and pass all arguments
@@ -95,7 +99,8 @@ class LeggedRobotCfg(BaseConfig):
         randomize_base_mass = False
         added_mass_range = [-1., 1.]
         push_robots = True
-        push_interval_s = 15
+        # push_interval_s = 15    # origional
+        push_interval_s = 150    # make this interval larger to simplify the task while terrain is changing
         max_push_vel_xy = 1.
 
     class rewards:

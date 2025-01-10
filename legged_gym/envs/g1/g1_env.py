@@ -7,6 +7,7 @@ import torch
 
 class G1Robot(LeggedRobot):
     
+    # NOTE: Different from the LeggedRobot --> Dimensions are different
     def _get_noise_scale_vec(self, cfg):
         """ Sets a vector used to scale the noise added to the observations.
             [NOTE]: Must be adapted when changing the observations structure
@@ -28,9 +29,14 @@ class G1Robot(LeggedRobot):
         noise_vec[9+self.num_actions:9+2*self.num_actions] = noise_scales.dof_vel * noise_level * self.obs_scales.dof_vel
         noise_vec[9+2*self.num_actions:9+3*self.num_actions] = 0. # previous actions
         noise_vec[9+3*self.num_actions:9+3*self.num_actions+2] = 0. # sin/cos phase
+
+        # if self.cfg.terrain.measure_heights:
+        #     new_start_idx = 9+3*self.num_actions+2
+        #     noise_vec[new_start_idx:new_start_idx+self.measured_heights.shape[1]] = noise_scales.height_measurements* noise_level * self.obs_scales.height_measurements
         
         return noise_vec
 
+    # NOTE: This foot init function seems to be new --- NEED TO FIND A REFERENCE!!!
     def _init_foot(self):
         self.feet_num = len(self.feet_indices)
         
@@ -62,9 +68,11 @@ class G1Robot(LeggedRobot):
         self.phase_right = (self.phase + offset) % 1
         self.leg_phase = torch.cat([self.phase_left.unsqueeze(1), self.phase_right.unsqueeze(1)], dim=-1)
         
+        # NOTE: The parent's function is called here!
         return super()._post_physics_step_callback()
     
     
+    # NOTE: The parent's function is overriden here! --> NEED TO PROVIDE heights info for rought terrain explicitly!!
     def compute_observations(self):
         """ Computes observations
         """
@@ -89,10 +97,24 @@ class G1Robot(LeggedRobot):
                                     sin_phase,
                                     cos_phase
                                     ),dim=-1)
+        # NOTE: MOST IMPORTANT CHANGE FOR RUNS ABOUT JAN10_12AM
         # add perceptive inputs if not blind
+        if self.cfg.terrain.measure_heights:
+            heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.obs_scales.height_measurements
+            self.obs_buf = torch.cat((self.obs_buf, heights), dim=-1)
+        
         # add noise if needed
         if self.add_noise:
-            self.obs_buf += (2 * torch.rand_like(self.obs_buf) - 1) * self.noise_scale_vec
+            desired_scale = self.obs_buf.shape[1]
+            noise_scales = self.cfg.noise.noise_scales
+            noise_level = self.cfg.noise.noise_level
+            noise_scales.height_measurements* noise_level * self.obs_scales.height_measurements
+            compatible_noise_scale_vec = torch.full((desired_scale,), 0.5, device=self.noise_scale_vec.device)
+
+            compatible_noise_scale_vec[:self.noise_scale_vec.shape[0]] = self.noise_scale_vec
+
+            # Add noise to the observations
+            self.obs_buf += (2 * torch.rand_like(self.obs_buf) - 1) * compatible_noise_scale_vec
 
         
     def _reward_contact(self):
