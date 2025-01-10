@@ -31,7 +31,7 @@ class G1RoughCfg( LeggedRobotCfg ):
         friction_range = [0.1, 1.25]
         randomize_base_mass = True
         added_mass_range = [-1., 3.]
-        push_robots = True
+        push_robots = False # disable pushing for now
         push_interval_s = 5
         max_push_vel_xy = 1.5
       
@@ -39,6 +39,7 @@ class G1RoughCfg( LeggedRobotCfg ):
     class control( LeggedRobotCfg.control ):
         # PD Drive parameters:
         control_type = 'P'
+        # control_type = 'V'  # Velocity control
           # PD Drive parameters:
         stiffness = {'hip_yaw': 100,
                      'hip_roll': 100,
@@ -91,13 +92,13 @@ class G1RoughCfg( LeggedRobotCfg ):
 
 class G1RoughCfgPPO( LeggedRobotCfgPPO ):
     class policy:
-        init_noise_std = 0.8
-        actor_hidden_dims = [32]
-        critic_hidden_dims = [32]
+        init_noise_std = 1.0
+        actor_hidden_dims = [512, 256, 128]
+        critic_hidden_dims = [512, 256, 128]
         activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
         # only for 'ActorCriticRecurrent':
         rnn_type = 'lstm'
-        rnn_hidden_size = 64
+        rnn_hidden_size = 512
         rnn_num_layers = 1
         
     class algorithm( LeggedRobotCfgPPO.algorithm ):
