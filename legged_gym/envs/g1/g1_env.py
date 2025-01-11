@@ -116,7 +116,11 @@ class G1Robot(LeggedRobot):
             # Add noise to the observations
             self.obs_buf += (2 * torch.rand_like(self.obs_buf) - 1) * compatible_noise_scale_vec
 
-        
+
+    # ================================================ Rewards ================================================== #
+    """
+    Some rewards function from the unitree_rl_gym/legged_gym/envs/g1/g1_env.py
+    """
     def _reward_contact(self):
         res = torch.zeros(self.num_envs, dtype=torch.float, device=self.device)
         for i in range(self.feet_num):
@@ -144,3 +148,97 @@ class G1Robot(LeggedRobot):
     def _reward_hip_pos(self):
         return torch.sum(torch.square(self.dof_pos[:,[1,2,7,8]]), dim=1)
     
+    """
+    ADDITIONAL reward functions from humanoid_gym
+    """
+    # ============ Gait ============
+    ## feet_air_time = 1.
+    def _reward_feet_air_time(self):
+        """
+        Calculates the reward for feet air time, promoting longer steps. This is achieved by
+        checking the first contact with the ground after being in the air. The air time is
+        limited to a maximum value for reward calculation.
+        """
+        contact = self.contact_forces[:, self.feet_indices, 2] > 1.
+        stance_mask = self._get_gait_phase()
+        self.contact_filt = torch.logical_or(torch.logical_or(contact, stance_mask), self.last_contacts)
+        self.last_contacts = contact
+        first_contact = (self.feet_air_time > 0.) * self.contact_filt
+        self.feet_air_time += self.dt
+        air_time = self.feet_air_time.clamp(0, 0.5) * first_contact
+        self.feet_air_time *= ~self.contact_filt
+        return air_time.sum(dim=1)
+
+    def  _get_phase(self):
+        cycle_time = self.cfg.rewards.cycle_time
+        phase = self.episode_length_buf * self.dt / cycle_time
+        return phase
+
+    def _get_gait_phase(self):
+        # return float mask 1 is stance, 0 is swing
+        phase = self._get_phase()
+        sin_pos = torch.sin(2 * torch.pi * phase)
+        # Add double support phase
+        stance_mask = torch.zeros((self.num_envs, 2), device=self.device)
+        # left foot stance
+        stance_mask[:, 0] = sin_pos >= 0
+        # right foot stance
+        stance_mask[:, 1] = sin_pos < 0
+        # Double support phase
+        stance_mask[torch.abs(sin_pos) < 0.1] = 1
+
+        return stance_mask
+
+    ## foot_slip = -0.05
+    def _reward_foot_slip(self):
+        """
+        Calculates the reward for minimizing foot slip. The reward is based on the contact forces 
+        and the speed of the feet. A contact threshold is used to determine if the foot is in contact 
+        with the ground. The speed of the foot is calculated and scaled by the contact condition.
+        """
+        contact = self.contact_forces[:, self.feet_indices, 2] > 5.
+        foot_speed_norm = torch.norm(self.rigid_state[:, self.feet_indices, 7:9], dim=2)
+        rew = torch.sqrt(foot_speed_norm)
+        rew *= contact
+        return torch.sum(rew, dim=1)    
+
+    ## feet_distance = 0.2
+    def _reward_feet_distance(self):
+        """
+        Calculates the reward based on the distance between the feet. Penalize feet get close to each other or too far away.
+        """
+        foot_pos = self.rigid_state[:, self.feet_indices, :2]
+        foot_dist = torch.norm(foot_pos[:, 0, :] - foot_pos[:, 1, :], dim=1)
+        fd = self.cfg.rewards.min_dist
+        max_df = self.cfg.rewards.max_dist
+        d_min = torch.clamp(foot_dist - fd, -0.5, 0.)
+        d_max = torch.clamp(foot_dist - max_df, 0, 0.5)
+        return (torch.exp(-torch.abs(d_min) * 100) + torch.exp(-torch.abs(d_max) * 100)) / 2
+
+    # knee_distance = 0.2
+    def _reward_knee_distance(self):
+        """
+        Calculates the reward based on the distance between the knee of the humanoid.
+        """
+        foot_pos = self.rigid_state[:, self.knee_indices, :2]
+        foot_dist = torch.norm(foot_pos[:, 0, :] - foot_pos[:, 1, :], dim=1)
+        fd = self.cfg.rewards.min_dist
+        max_df = self.cfg.rewards.max_dist / 2
+        d_min = torch.clamp(foot_dist - fd, -0.5, 0.)
+        d_max = torch.clamp(foot_dist - max_df, 0, 0.5)
+        return (torch.exp(-torch.abs(d_min) * 100) + torch.exp(-torch.abs(d_max) * 100)) / 2
+
+
+    # ============ Energy ============
+    ## action_smoothness = -0.002
+    def _reward_action_smoothness(self):
+        """
+        Encourages smoothness in the robot's actions by penalizing large differences between consecutive actions.
+        This is important for achieving fluid motion and reducing mechanical stress.
+        """
+        term_1 = torch.sum(torch.square(
+            self.last_actions - self.actions), dim=1)
+        term_2 = torch.sum(torch.square(
+            self.actions + self.last_last_actions - 2 * self.last_actions), dim=1)
+        term_3 = 0.05 * torch.sum(torch.abs(self.actions), dim=1)
+        return term_1 + term_2 + term_3

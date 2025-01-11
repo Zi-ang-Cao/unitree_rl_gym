@@ -62,6 +62,7 @@ class G1RoughCfg( LeggedRobotCfg ):
         file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/g1_description/g1_12dof.urdf'
         name = "g1"
         foot_name = "ankle_roll"
+        knee_name = "knee"
         penalize_contacts_on = ["hip", "knee"]
         terminate_after_contacts_on = ["pelvis"]
         self_collisions = 0 # 1 to disable, 0 to enable...bitwise filter
@@ -71,17 +72,37 @@ class G1RoughCfg( LeggedRobotCfg ):
         soft_dof_pos_limit = 0.9
         base_height_target = 0.78
         
+        # ========= Additional parameters for humanoid_gym reward =========
+        min_dist = 0.2
+        max_dist = 0.5
+        cycle_time = 0.64
+        
         class scales( LeggedRobotCfg.rewards.scales ):
+            # ========= Additional parameters for humanoid_gym reward =========
+            # gait
+            feet_air_time = 1.
+            foot_slip = -0.05
+            feet_distance = 0.2
+            knee_distance = 0.2
+            
+            # energy
+            action_smoothness = -0.002
+            torques = -1e-5
+            dof_vel = -5e-4
+            dof_acc = -1e-7
+            collision = -1.
+
+            # ========= Original values from unitree_rl_gym/legged_gym/envs/g1/g1_config.py =========
             tracking_lin_vel = 1.0
             tracking_ang_vel = 0.5
             lin_vel_z = -2.0
             ang_vel_xy = -0.05
             orientation = -1.0
             base_height = -10.0
-            dof_acc = -2.5e-7
-            dof_vel = -1e-3
-            feet_air_time = 0.0
-            collision = 0.0
+            # dof_acc = -2.5e-7
+            # dof_vel = -1e-3
+            # feet_air_time = 0.0
+            # collision = 0.0
             action_rate = -0.01
             dof_pos_limits = -5.0
             alive = 0.15

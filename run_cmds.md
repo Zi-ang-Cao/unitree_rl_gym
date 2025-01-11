@@ -4,67 +4,28 @@
   - [trimesh\_push\_inter150](#trimesh_push_inter150)
   - [plane\_push\_inter150](#plane_push_inter150)
   - [heightfield\_push\_inter150](#heightfield_push_inter150)
+- [HOW TO SETUP](#how-to-setup)
 
-
-# No Push + Velocity Control
+# ENVIRONMENT
+> Ubuntu 20 + CUDA 12.1 + python 3.8
 ```zsh
-# trimesh
+conda create -n unitree-rl python=3.8 -y
+conda activate unitree-rl
 
-# Training
-python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="V_trimesh_no_push_large_nn"
-# python legged_gym/scripts/train.py --task=g1 --experiment_name="V_trimesh_no_push"
-
-# Store to "logs/V_trimesh_no_push/Jan10_09-08-56_"
-
-# Play
-python legged_gym/scripts/play.py --task=g1 --experiment_name="V_trimesh_no_push_large_nn" --load_run="Jan10_10-05-19_"
+pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu121
 
 ```
 
+# Jan 10
 
-
-# Jan 10 with Push + Position Control
-
-## trimesh_push_inter150
+# With 5 dummy reward
+## No Push + Position Control + trimesh Terrain + humanoid_gym_gait_and_energy
 ```zsh
 # trimesh
 
 # Training
-python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="trimesh_push_inter150"
-# python legged_gym/scripts/train.py --task=g1 --experiment_name="trimesh_push_inter150"
-
-# Store to "logs/trimesh_push_inter150/Jan10_02-27-27_"
+python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="P_trimesh_no_push_large_nn_add_5_reward_with_humanoid_gym_gait_and_energy"
 
 # Play
-python legged_gym/scripts/play.py --task=g1 --experiment_name="trimesh_push_inter150" --load_run="Jan10_02-27-27_"
-
-```
-
-
-## plane_push_inter150
-```zsh
-# trimesh
-
-# Training
-python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="plane_push_inter150"
-# Store to "logs/plane_push_inter150/Jan09_xxx"
-
-# Play
-python legged_gym/scripts/play.py --task=g1 --experiment_name="plane_push_inter150" --load_run="Jan09_xxx"
-
-```
-
-## heightfield_push_inter150
-```zsh
-# trimesh
-
-# Training
-python legged_gym/scripts/train.py --task=g1 --experiment_name="heightfield_push_inter150"
-
-python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="heightfield_push_inter150"
-# Store to "logs/heightfield_push_inter150/Jan09_xxx"
-
-# Play
-python legged_gym/scripts/play.py --task=g1 --experiment_name="heightfield_push_inter150" --load_run="Jan09_xxx"
-
+python legged_gym/scripts/play.py --task=g1 --experiment_name="P_trimesh_no_push_large_nn_add_5_reward_with_humanoid_gym_gait_and_energy" --load_run="Jan10_17-06-33_"
 ```
