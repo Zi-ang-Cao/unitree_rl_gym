@@ -23,9 +23,19 @@ pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https
 ```zsh
 # trimesh
 
+############################################################################################################
 # Training
-python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="P_trimesh_no_push_large_nn_add_5_reward_with_humanoid_gym_gait_and_energy"
+## 4070Ti -- with G1RoughCfg.env.partially_masked_height_map = True
+python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="P_trimesh_no_push_large_nn_add_01_reward_with_humanoid_gym_gait_and_energy_passHeight2Critic" --run_name="obs_partial_height"
 
+## B14 -- with G1RoughCfg.env.partially_masked_height_map = False
+python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="P_trimesh_no_push_large_nn_add_01_reward_with_humanoid_gym_gait_and_energy_passHeight2Critic" --run_name="obs_full_height"
+
+############################################################################################################
 # Play
-python legged_gym/scripts/play.py --task=g1 --experiment_name="P_trimesh_no_push_large_nn_add_5_reward_with_humanoid_gym_gait_and_energy" --load_run="Jan10_17-06-33_"
+## 4070Ti -- with G1RoughCfg.env.partially_masked_height_map = True
+python legged_gym/scripts/play.py --task=g1 --experiment_name="P_trimesh_no_push_large_nn_add_01_reward_with_humanoid_gym_gait_and_energy_passHeight2Critic" --load_run="Jan10_23-57-21_obs_partial_height"
+
+## B14 -- with G1RoughCfg.env.partially_masked_height_map = False
+python legged_gym/scripts/play.py --task=g1 --experiment_name="P_trimesh_no_push_large_nn_add_01_reward_with_humanoid_gym_gait_and_energy_passHeight2Critic" --load_run="Jan10_23-57-21_obs_full_height"
 ```

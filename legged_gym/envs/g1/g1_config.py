@@ -22,7 +22,8 @@ class G1RoughCfg( LeggedRobotCfg ):
     class env(LeggedRobotCfg.env):
         dim_height_map = LeggedRobotCfg.terrain.height_map_dim if LeggedRobotCfg.terrain.mesh_type in ['heightfield', 'trimesh'] else 0
         num_observations = 47 + dim_height_map # add 187 for rough terrain
-        num_privileged_obs = 50
+        num_privileged_obs = 50 + dim_height_map # add 187 for rough terrain
+        partially_masked_height_map = True
         num_actions = 12
 
 
@@ -80,21 +81,21 @@ class G1RoughCfg( LeggedRobotCfg ):
         class scales( LeggedRobotCfg.rewards.scales ):
             # ========= Additional parameters for humanoid_gym reward =========
             # gait
-            feet_air_time = 1.
-            foot_slip = -0.05
+            feet_air_time = 2.
+            foot_slip = -0.1
             feet_distance = 0.2
             knee_distance = 0.2
             
             # energy
-            action_smoothness = -0.002
+            # action_smoothness = -0.002
             torques = -1e-5
             dof_vel = -5e-4
             dof_acc = -1e-7
             collision = -1.
 
             # ========= Original values from unitree_rl_gym/legged_gym/envs/g1/g1_config.py =========
-            tracking_lin_vel = 1.0
-            tracking_ang_vel = 0.5
+            tracking_lin_vel = 1.0 * 5
+            tracking_ang_vel = 0.5 * 5
             lin_vel_z = -2.0
             ang_vel_xy = -0.05
             orientation = -1.0

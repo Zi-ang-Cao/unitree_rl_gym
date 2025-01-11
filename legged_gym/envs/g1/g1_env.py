@@ -101,7 +101,20 @@ class G1Robot(LeggedRobot):
         # add perceptive inputs if not blind
         if self.cfg.terrain.measure_heights:
             heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.obs_scales.height_measurements
-            self.obs_buf = torch.cat((self.obs_buf, heights), dim=-1)
+            # NOTE: clipped to [-1, 1] to avoid large values
+            heights = torch.clamp(heights, min=-1.0, max=1.0)
+
+            # add heights to privileged observations (Critic)
+            self.privileged_obs_buf = torch.cat((self.privileged_obs_buf, heights), dim=-1)
+            
+            # add heights to observations (Actor)
+            if self.cfg.env.partially_masked_height_map:
+                # add zero patch masks to heights 
+                mask = torch.rand_like(heights) > 0.5  # Generate a mask with 50% True values
+                accessible_heights = heights * mask.float()  # Apply the mask
+            else:
+                accessible_heights = heights
+            self.obs_buf = torch.cat((self.obs_buf, accessible_heights), dim=-1)
         
         # add noise if needed
         if self.add_noise:
@@ -196,7 +209,7 @@ class G1Robot(LeggedRobot):
         and the speed of the feet. A contact threshold is used to determine if the foot is in contact 
         with the ground. The speed of the foot is calculated and scaled by the contact condition.
         """
-        contact = self.contact_forces[:, self.feet_indices, 2] > 5.
+        contact = self.contact_forces[:, self.feet_indices, 2] > 1.
         foot_speed_norm = torch.norm(self.rigid_state[:, self.feet_indices, 7:9], dim=2)
         rew = torch.sqrt(foot_speed_norm)
         rew *= contact
