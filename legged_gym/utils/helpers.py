@@ -104,6 +104,10 @@ def update_cfg_from_args(env_cfg, cfg_train, args):
         if args.actor_height_map_accessibility is not None:
             print(f"Setting actor_height_map_accessibility to {args.actor_height_map_accessibility}")
             env_cfg.env.actor_height_map_accessibility = args.actor_height_map_accessibility
+        
+        if args.random_push:
+            env_cfg.domain_rand.push_robots = args.random_push
+            print(f"Enabling random push to {env_cfg.domain_rand.push_robots}")
 
     if cfg_train is not None:
         if args.seed is not None:
@@ -141,6 +145,8 @@ def get_args():
         {"name": "--max_iterations", "type": int, "help": "Maximum number of training iterations. Overrides config file if provided."},
 
         {"name": "--actor_height_map_accessibility", "type": str, "default": "partially_masked", "help": 'partially_masked or fully_masked'},
+        {"name": "--random_push", "action": "store_true", "default": False, "help": "enable random push"},
+
     ]
     # parse arguments
     args = gymutil.parse_arguments(

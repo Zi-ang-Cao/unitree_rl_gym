@@ -65,6 +65,9 @@ class TaskRegistry():
         print("=="*10, "\nEnvironment Config:")
         for key, value in env_cfg.env.__dict__.items():
             print(f"{key} = {value}")
+        print("=="*10, "\domain_rand Config:")
+        for key, value in env_cfg.domain_rand.__dict__.items():
+            print(f"{key} = {value}")
         print("=="*10)
         set_seed(env_cfg.seed)
         # parse sim params (convert to dict first)

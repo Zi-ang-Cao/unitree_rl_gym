@@ -16,6 +16,18 @@ pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https
 
 ```
 
+# Jan 12 with random push
+```zsh
+# 4070Ti
+python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="Jan11_commit_reward_MORE_DISCRETE_NO_STAIR_P_trimesh_512_nn_add_01_dummyReward" --run_name="obs_partial_height_with_push15_from_scratch" --actor_height_map_accessibility="partially_masked" --random_push
+
+# B14
+python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="Jan11_commit_reward_MORE_DISCRETE_NO_STAIR_P_trimesh_512_nn_add_01_dummyReward" --run_name="obs_partial_height_with_push15_resume_from_no_push" --actor_height_map_accessibility="partially_masked" --random_push --resume --load_run="Jan12_00-34-52_obs_partial_height"
+
+```
+
+############################################################################################################
+
 # Jan 11
 ```zsh
 # 4070Ti
@@ -23,6 +35,13 @@ python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="Jan11
 
 # B14
 python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="Jan11_commit_reward_MORE_DISCRETE_NO_STAIR_P_trimesh_512_nn_add_01_dummyReward" --run_name="obs_full_height" --actor_height_map_accessibility="full"
+
+
+# Partially Masked -- works!
+python legged_gym/scripts/play.py --task=g1 --experiment_name="Jan11_commit_reward_MORE_DISCRETE_NO_STAIR_P_trimesh_512_nn_add_01_dummyReward" --actor_height_map_accessibility="partially_masked" --load_run="Jan12_00-34-52_obs_partial_height"
+
+# Full observation -- haven't fully trained! seems like the performence is worser than partially masked
+python legged_gym/scripts/play.py --task=g1 --experiment_name="Jan11_commit_reward_MORE_DISCRETE_NO_STAIR_P_trimesh_512_nn_add_01_dummyReward" --actor_height_map_accessibility="obs_full_height" --load_run="Jan12_00-34-54_obs_full_height"
 ```
 
 # Jan 10
