@@ -19,10 +19,10 @@ pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https
 # Jan 11
 ```zsh
 # 4070Ti
-python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="Jan11_commit_reward_MORE_DISCRETE_NO_STAIR_P_trimesh_512_nn_add_05_dummyReward" --run_name="obs_partial_height" --actor_height_map_accessibility="partially_masked"
+python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="Jan11_commit_reward_MORE_DISCRETE_NO_STAIR_P_trimesh_512_nn_add_01_dummyReward" --run_name="obs_partial_height" --actor_height_map_accessibility="partially_masked"
 
 # B14
-python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="Jan11_commit_reward_MORE_DISCRETE_NO_STAIR_P_trimesh_512_nn_add_05_dummyReward" --run_name="obs_full_height" --actor_height_map_accessibility="full"
+python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="Jan11_commit_reward_MORE_DISCRETE_NO_STAIR_P_trimesh_512_nn_add_01_dummyReward" --run_name="obs_full_height" --actor_height_map_accessibility="full"
 ```
 
 # Jan 10
