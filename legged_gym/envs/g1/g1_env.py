@@ -106,8 +106,6 @@ class G1Robot(LeggedRobot):
         # add perceptive inputs if not blind
         if self.cfg.terrain.measure_heights:
             heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.obs_scales.height_measurements
-            # NOTE: clipped to [-1, 1] to avoid large values
-            heights = torch.clamp(heights, min=-1.0, max=1.0)
 
             # add heights to privileged observations (Critic)
             self.privileged_obs_buf = torch.cat((self.privileged_obs_buf, heights), dim=-1)
