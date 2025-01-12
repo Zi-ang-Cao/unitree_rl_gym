@@ -204,7 +204,8 @@ class LeggedRobot(BaseTask):
         if self.cfg.rewards.only_positive_rewards:
             # NOTE: ADD 5 dummy reward to avoid negative rewards!!!!!
             # THE POLICY NEED TO LEARN THE INFORMATION FROM THE REWARD -- THEREFORE, THE REWARD CAN NOT BE ALL ZEROS!!!
-            self.rew_buf[:] = torch.clip(self.rew_buf[:] + 0.1, min=0.)
+            self.rew_buf[:] = torch.clip(self.rew_buf[:] + 0.05, min=0.)
+            # self.rew_buf[:] = torch.clip(self.rew_buf[:], min=0.)
 
         # add termination reward after clipping
         if "termination" in self.reward_scales:
