@@ -23,7 +23,7 @@ class G1RoughCfg( LeggedRobotCfg ):
         dim_height_map = LeggedRobotCfg.terrain.height_map_dim if LeggedRobotCfg.terrain.mesh_type in ['heightfield', 'trimesh'] else 0
         num_observations = 47 + dim_height_map # add 187 for rough terrain
         num_privileged_obs = 50 + dim_height_map # add 187 for rough terrain
-        partially_masked_height_map = True
+        actor_height_map_accessibility = "partial" # "full" or "partial"
         num_actions = 12
 
 
@@ -75,11 +75,16 @@ class G1RoughCfg( LeggedRobotCfg ):
         
         # ========= Additional parameters for humanoid_gym reward =========
         min_dist = 0.2
-        max_dist = 0.5
+        max_dist = 0.4
         cycle_time = 0.64
+        target_feet_height = 0.06   # m
         
         class scales( LeggedRobotCfg.rewards.scales ):
             # ========= Additional parameters for humanoid_gym reward =========
+            # reference motion tracking
+            feet_clearance = 1.
+            feet_contact_number = 1.2
+
             # gait
             feet_air_time = 2.
             foot_slip = -0.1
@@ -87,18 +92,24 @@ class G1RoughCfg( LeggedRobotCfg ):
             knee_distance = 0.2
             
             # energy
-            # action_smoothness = -0.002
+            action_smoothness = -0.002
             torques = -1e-5
             dof_vel = -5e-4
             dof_acc = -1e-7
             collision = -1.
 
-            # ========= Original values from unitree_rl_gym/legged_gym/envs/g1/g1_config.py =========
+            # vel tracking
             tracking_lin_vel = 1.0 * 5
             tracking_ang_vel = 0.5 * 5
-            lin_vel_z = -2.0
-            ang_vel_xy = -0.05
-            orientation = -1.0
+            vel_mismatch_exp = 0.5  # lin_z; ang x,y
+            low_speed = 0.2
+            track_vel_hard = 0.5
+            
+
+            # ========= Original values from unitree_rl_gym/legged_gym/envs/g1/g1_config.py =========
+            # lin_vel_z = -2.0
+            # ang_vel_xy = -0.05
+            orientation = -1.0  * 3
             base_height = -10.0
             # dof_acc = -2.5e-7
             # dof_vel = -1e-3

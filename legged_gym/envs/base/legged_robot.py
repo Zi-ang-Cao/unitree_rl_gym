@@ -111,6 +111,7 @@ class LeggedRobot(BaseTask):
         self.base_lin_vel[:] = quat_rotate_inverse(self.base_quat, self.root_states[:, 7:10])
         self.base_ang_vel[:] = quat_rotate_inverse(self.base_quat, self.root_states[:, 10:13])
         self.projected_gravity[:] = quat_rotate_inverse(self.base_quat, self.gravity_vec)
+        self.base_euler_xyz = get_euler_xyz_tensor(self.base_quat)
 
         self._post_physics_step_callback()
 
@@ -189,6 +190,11 @@ class LeggedRobot(BaseTask):
         # send timeout info to the algorithm
         if self.cfg.env.send_timeouts:
             self.extras["time_outs"] = self.time_out_buf
+
+        # fix reset gravity bug
+        self.base_quat[env_ids] = self.root_states[env_ids, 3:7]
+        self.base_euler_xyz = get_euler_xyz_tensor(self.base_quat)
+        self.projected_gravity[env_ids] = quat_rotate_inverse(self.base_quat[env_ids], self.gravity_vec[env_ids])
     
     def compute_reward(self):
         """ Compute rewards
@@ -202,10 +208,9 @@ class LeggedRobot(BaseTask):
             self.rew_buf += rew
             self.episode_sums[name] += rew
         if self.cfg.rewards.only_positive_rewards:
-            # NOTE: ADD 5 dummy reward to avoid negative rewards!!!!!
+            # NOTE: ADD 0.5 dummy reward to avoid negative rewards!!!!!
             # THE POLICY NEED TO LEARN THE INFORMATION FROM THE REWARD -- THEREFORE, THE REWARD CAN NOT BE ALL ZEROS!!!
-            self.rew_buf[:] = torch.clip(self.rew_buf[:] + 0.05, min=0.)
-            # self.rew_buf[:] = torch.clip(self.rew_buf[:], min=0.)
+            self.rew_buf[:] = torch.clip(self.rew_buf[:] + 0.5, min=0.)
 
         # add termination reward after clipping
         if "termination" in self.reward_scales:
@@ -507,6 +512,7 @@ class LeggedRobot(BaseTask):
         self.base_pos = self.root_states[:self.num_envs, 0:3]
         self.contact_forces = gymtorch.wrap_tensor(net_contact_forces).view(self.num_envs, -1, 3) # shape: num_envs, num_bodies, xyz axis
         self.rigid_state = gymtorch.wrap_tensor(rigid_body_state).view(self.num_envs, -1, 13)
+        self.base_euler_xyz = get_euler_xyz_tensor(self.base_quat)
 
         # initialize some data used later on
         self.common_step_counter = 0
@@ -530,6 +536,7 @@ class LeggedRobot(BaseTask):
         self.base_lin_vel = quat_rotate_inverse(self.base_quat, self.root_states[:, 7:10])
         self.base_ang_vel = quat_rotate_inverse(self.base_quat, self.root_states[:, 10:13])
         self.projected_gravity = quat_rotate_inverse(self.base_quat, self.gravity_vec)
+        self.base_euler_xyz = get_euler_xyz_tensor(self.base_quat)
 
         if self.cfg.terrain.measure_heights:
             self.height_points = self._init_height_points()
@@ -884,8 +891,13 @@ class LeggedRobot(BaseTask):
         return torch.sum(torch.square(self.base_ang_vel[:, :2]), dim=1)
     
     def _reward_orientation(self):
-        # Penalize non flat base orientation
-        return torch.sum(torch.square(self.projected_gravity[:, :2]), dim=1)
+        """
+        Calculates the reward for maintaining a flat base orientation. It penalizes deviation 
+        from the desired base orientation using the base euler angles and the projected gravity vector.
+        """
+        quat_mismatch = torch.exp(-torch.sum(torch.abs(self.base_euler_xyz[:, :2]), dim=1) * 10)
+        orientation = torch.exp(-torch.norm(self.projected_gravity[:, :2], dim=1) * 20)
+        return (quat_mismatch + orientation) / 2.
 
     def _reward_base_height(self):
         # Penalize base height away from target
@@ -953,7 +965,6 @@ class LeggedRobot(BaseTask):
         """
         # Reward long steps
         # Need to filter the contacts because the contact reporting of PhysX is unreliable on meshes
-        import pdb; pdb.set_trace()
         # contact.shape = torch.Size([4096, 2]) --> True for contact with the ground, False for no contact (in the air)
         contact = self.contact_forces[:, self.feet_indices, 2] > 1.
         # contact_filt is True if robot is currently in contact or was just in contact

@@ -6,7 +6,12 @@ from isaacgym import gymtorch, gymapi, gymutil
 import torch
 
 class G1Robot(LeggedRobot):
-    
+
+    def __init__(self, cfg, sim_params, physics_engine, sim_device, headless):
+        super().__init__(cfg, sim_params, physics_engine, sim_device, headless)
+        self.last_feet_z = 0.05
+        self.feet_height = torch.zeros((self.num_envs, 2), device=self.device)
+
     # NOTE: Different from the LeggedRobot --> Dimensions are different
     def _get_noise_scale_vec(self, cfg):
         """ Sets a vector used to scale the noise added to the observations.
@@ -108,7 +113,7 @@ class G1Robot(LeggedRobot):
             self.privileged_obs_buf = torch.cat((self.privileged_obs_buf, heights), dim=-1)
             
             # add heights to observations (Actor)
-            if self.cfg.env.partially_masked_height_map:
+            if self.cfg.env.actor_height_map_accessibility == "partially_masked":
                 # add zero patch masks to heights 
                 mask = torch.rand_like(heights) > 0.5  # Generate a mask with 50% True values
                 accessible_heights = heights * mask.float()  # Apply the mask
@@ -164,6 +169,41 @@ class G1Robot(LeggedRobot):
     """
     ADDITIONAL reward functions from humanoid_gym
     """
+    ## feet_clearance = 1.
+    def _reward_feet_clearance(self):
+        """
+        Calculates reward based on the clearance of the swing leg from the ground during movement.
+        Encourages appropriate lift of the feet during the swing phase of the gait.
+        """
+        # Compute feet contact mask
+        contact = self.contact_forces[:, self.feet_indices, 2] > 5.
+
+        # Get the z-position of the feet and compute the change in z-position
+        feet_z = self.rigid_state[:, self.feet_indices, 2] - 0.05
+        delta_z = feet_z - self.last_feet_z
+        self.feet_height += delta_z
+        self.last_feet_z = feet_z
+
+        # Compute swing mask
+        swing_mask = 1 - self._get_gait_phase()
+
+        # feet height should be closed to target feet height at the peak
+        rew_pos = torch.abs(self.feet_height - self.cfg.rewards.target_feet_height) < 0.01
+        rew_pos = torch.sum(rew_pos * swing_mask, dim=1)
+        self.feet_height *= ~contact
+        return rew_pos
+    
+    ## feet_contact_number = 1.2
+    def _reward_feet_contact_number(self):
+        """
+        Calculates a reward based on the number of feet contacts aligning with the gait phase. 
+        Rewards or penalizes depending on whether the foot contact matches the expected gait phase.
+        """
+        contact = self.contact_forces[:, self.feet_indices, 2] > 5.
+        stance_mask = self._get_gait_phase()
+        reward = torch.where(contact == stance_mask, 1.0, -0.3)
+        return torch.mean(reward, dim=1)
+
     # ============ Gait ============
     ## feet_air_time = 1.
     def _reward_feet_air_time(self):
@@ -255,3 +295,71 @@ class G1Robot(LeggedRobot):
             self.actions + self.last_last_actions - 2 * self.last_actions), dim=1)
         term_3 = 0.05 * torch.sum(torch.abs(self.actions), dim=1)
         return term_1 + term_2 + term_3
+    
+    # ================== Velocity ==================
+    ## vel_mismatch_exp = 0.5  # lin_z; ang x,y
+    def _reward_vel_mismatch_exp(self):
+        """
+        Computes a reward based on the mismatch in the robot's linear and angular velocities. 
+        Encourages the robot to maintain a stable velocity by penalizing large deviations.
+        """
+        lin_mismatch = torch.exp(-torch.square(self.base_lin_vel[:, 2]) * 10)
+        ang_mismatch = torch.exp(-torch.norm(self.base_ang_vel[:, :2], dim=1) * 5.)
+
+        c_update = (lin_mismatch + ang_mismatch) / 2.
+
+        return c_update
+    
+    ## low_speed = 0.2
+    def _reward_low_speed(self):
+        """
+        Rewards or penalizes the robot based on its speed relative to the commanded speed. 
+        This function checks if the robot is moving too slow, too fast, or at the desired speed, 
+        and if the movement direction matches the command.
+        """
+        # Calculate the absolute value of speed and command for comparison
+        absolute_speed = torch.abs(self.base_lin_vel[:, 0])
+        absolute_command = torch.abs(self.commands[:, 0])
+
+        # Define speed criteria for desired range
+        speed_too_low = absolute_speed < 0.5 * absolute_command
+        speed_too_high = absolute_speed > 1.2 * absolute_command
+        speed_desired = ~(speed_too_low | speed_too_high)
+
+        # Check if the speed and command directions are mismatched
+        sign_mismatch = torch.sign(
+            self.base_lin_vel[:, 0]) != torch.sign(self.commands[:, 0])
+
+        # Initialize reward tensor
+        reward = torch.zeros_like(self.base_lin_vel[:, 0])
+
+        # Assign rewards based on conditions
+        # Speed too low
+        reward[speed_too_low] = -1.0
+        # Speed too high
+        reward[speed_too_high] = 0.
+        # Speed within desired range
+        reward[speed_desired] = 1.2
+        # Sign mismatch has the highest priority
+        reward[sign_mismatch] = -2.0
+        return reward * (self.commands[:, 0].abs() > 0.1)
+
+    ## track_vel_hard = 0.5
+    def _reward_track_vel_hard(self):
+        """
+        Calculates a reward for accurately tracking both linear and angular velocity commands.
+        Penalizes deviations from specified linear and angular velocity targets.
+        """
+        # Tracking of linear velocity commands (xy axes)
+        lin_vel_error = torch.norm(
+            self.commands[:, :2] - self.base_lin_vel[:, :2], dim=1)
+        lin_vel_error_exp = torch.exp(-lin_vel_error * 10)
+
+        # Tracking of angular velocity commands (yaw)
+        ang_vel_error = torch.abs(
+            self.commands[:, 2] - self.base_ang_vel[:, 2])
+        ang_vel_error_exp = torch.exp(-ang_vel_error * 10)
+
+        linear_error = 0.2 * (lin_vel_error + ang_vel_error)
+
+        return (lin_vel_error_exp + ang_vel_error_exp) / 2. - linear_error

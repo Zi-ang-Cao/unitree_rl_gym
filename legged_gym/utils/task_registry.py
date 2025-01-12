@@ -61,6 +61,11 @@ class TaskRegistry():
             env_cfg, _ = self.get_cfgs(name)
         # override cfg from args (if specified)
         env_cfg, _ = update_cfg_from_args(env_cfg, None, args)
+        # print out the variables inside of env_cfg.env
+        print("=="*10, "\nEnvironment Config:")
+        for key, value in env_cfg.env.__dict__.items():
+            print(f"{key} = {value}")
+        print("=="*10)
         set_seed(env_cfg.seed)
         # parse sim params (convert to dict first)
         sim_params = {"sim": class_to_dict(env_cfg.sim)}

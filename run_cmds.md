@@ -16,6 +16,15 @@ pip install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https
 
 ```
 
+# Jan 11
+```zsh
+# 4070Ti
+python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="Jan11_commit_reward_MORE_DISCRETE_NO_STAIR_P_trimesh_512_nn_add_05_dummyReward" --run_name="obs_partial_height" --actor_height_map_accessibility="partially_masked"
+
+# B14
+python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="Jan11_commit_reward_MORE_DISCRETE_NO_STAIR_P_trimesh_512_nn_add_05_dummyReward" --run_name="obs_full_height" --actor_height_map_accessibility="full"
+```
+
 # Jan 10
 
 # With 5 dummy reward
@@ -32,7 +41,7 @@ python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="P_tri
 python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="track_x2_NO_STAIR_P_trimesh_no_push_large_nn_add_00_reward_with_humanoid_gym_gait_and_energy_passHeight2Critic" --run_name="obs_partial_height"
 
 ## More discrete terrain + 005 dummy reward + with G1RoughCfg.env.partially_masked_height_map = True
-python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="track_x5_MORE_DISCRETE_NO_STAIR_P_trimesh_no_push_large_nn_add_005_reward_with_humanoid_gym_gait_and_energy_passHeight2Critic" --run_name="obs_partial_height"
+python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="track_x5_MORE_DISCRETE_NO_STAIR_P_trimesh_no_push_large_nn_add_05_reward_with_humanoid_gym_gait_energy_passHeight2Critic" --run_name="obs_partial_height"
 
 ## B14 -- with G1RoughCfg.env.partially_masked_height_map = False
 python legged_gym/scripts/train.py --task=g1 --headless --experiment_name="P_trimesh_no_push_large_nn_add_01_reward_with_humanoid_gym_gait_and_energy_passHeight2Critic" --run_name="obs_full_height"

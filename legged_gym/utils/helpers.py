@@ -100,6 +100,11 @@ def update_cfg_from_args(env_cfg, cfg_train, args):
         # num envs
         if args.num_envs is not None:
             env_cfg.env.num_envs = args.num_envs
+        # 
+        if args.actor_height_map_accessibility is not None:
+            print(f"Setting actor_height_map_accessibility to {args.actor_height_map_accessibility}")
+            env_cfg.env.actor_height_map_accessibility = args.actor_height_map_accessibility
+
     if cfg_train is not None:
         if args.seed is not None:
             cfg_train.seed = args.seed
@@ -134,6 +139,8 @@ def get_args():
         {"name": "--num_envs", "type": int, "help": "Number of environments to create. Overrides config file if provided."},
         {"name": "--seed", "type": int, "help": "Random seed. Overrides config file if provided."},
         {"name": "--max_iterations", "type": int, "help": "Maximum number of training iterations. Overrides config file if provided."},
+
+        {"name": "--actor_height_map_accessibility", "type": str, "default": "partially_masked", "help": 'partially_masked or fully_masked'},
     ]
     # parse arguments
     args = gymutil.parse_arguments(
